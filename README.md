@@ -151,49 +151,59 @@ jupyter notebook
 
 ## 🔧 환경 변수
 
-### 필수 설정
-
 ```bash
-# OpenAI (임베딩 생성 필수)
-OPENAI_API_KEY=your_key_here
-
-# Pinecone (벡터 DB - 무료 티어 사용 가능)
-PINECONE_API_KEY=your_key_here
-PINECONE_INDEX_NAME=insightstock
-
-# Redis (캐싱 - 선택사항, 권장)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-
-# Backend API (동기화용)
-BACKEND_API_URL=http://localhost:3001
+cp .env.example .env
 ```
 
-### 선택 설정
-
-```bash
-# Ollama (로컬 LLM/SLM - 무료)
-OLLAMA_HOST=http://localhost:11434
-
-# Anthropic Claude (선택사항)
-ANTHROPIC_API_KEY=your_key_here
-
-# Google Gemini (선택사항)
-GEMINI_API_KEY=your_key_here
-
+```env
+# ============================================
 # Server
+# ============================================
 PORT=3002
 HOST=0.0.0.0
+NODE_ENV=development
 LOG_LEVEL=INFO
 
-# 비용 최적화
+# ============================================
+# LLM Providers — 최소 하나의 API 키 필요
+# ============================================
+OPENAI_API_KEY=sk-proj-...          # OpenAI (우선순위 1)
+ANTHROPIC_API_KEY=sk-ant-api03-...  # Claude  (우선순위 2)
+GEMINI_API_KEY=AIzaSy-...           # Gemini  (우선순위 3)
+OLLAMA_HOST=http://localhost:11434  # Ollama  (우선순위 4, 로컬 무료)
+
+# ============================================
+# Vector Database (Pinecone)
+# ============================================
+PINECONE_API_KEY=your-pinecone-api-key
+PINECONE_INDEX_NAME=insightstock
+
+# ============================================
+# Cache (Redis)
+# ============================================
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=          # 선택사항
+REDIS_DB=0
+
+# ============================================
+# Backend Integration
+# ============================================
+BACKEND_API_URL=http://localhost:3001
+
+# ============================================
+# 비용 최적화 (선택사항)
+# ============================================
 EMBEDDING_MODEL=text-embedding-3-small
 ```
 
-### 상세 가이드
+**API 키 발급 링크**:
+- OpenAI → https://platform.openai.com/api-keys
+- Anthropic → https://console.anthropic.com/settings/keys
+- Gemini → https://aistudio.google.com/app/apikey
+- Pinecone → https://www.pinecone.io/
 
-자세한 설정 방법은 [ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md)를 참조하세요.
+자세한 설정 방법은 [docs/ENV_SETUP_GUIDE.md](./docs/ENV_SETUP_GUIDE.md)를 참조하세요.
 
 ## 🐳 Docker
 
@@ -229,6 +239,158 @@ const response = await fetch(`${AI_SERVICE_URL}/chat/stream`, {
 - **간단한 질문**: Phi-3.5 (SLM, 빠름)
 - **일반 대화**: Qwen2.5 7B (LLM, 균형)
 - **복잡한 분석**: Llama 3.1 70B (LLM, 정확)
+
+## 🤖 지원 모델 전체 목록
+
+`GET /api/models` 로 런타임에 사용 가능한 모델 목록을 조회할 수 있습니다.
+
+### Ollama (로컬 — 무료)
+
+| 모델 | 타입 | Max Tokens | 용도 |
+|------|------|-----------|------|
+| `phi3.5` | SLM | 2,048 | 간단한 질문, 검색 제안, 자동완성 |
+| `qwen2.5:7b` | LLM | 4,096 | 일반 대화, 설명, 분석 |
+| `llama3.1:70b` | LLM | 8,192 | 복잡한 분석, 전략 수립, 심층 추론 |
+| `ax:3.1-lite` | LLM | 4,096 | 한국어 금융 질문, 한국 시장 분석 |
+
+### OpenAI
+
+| 모델 | Max Tokens | 용도 |
+|------|-----------|------|
+| `gpt-4o-mini` | 16,384 | 일반 대화, 빠른 응답 |
+| `gpt-4o` | 128,000 | 복잡한 분석, 정확한 답변 |
+| `gpt-4.1` | 128,000 | 복잡한 분석, 긴 컨텍스트 |
+| `gpt-5-mini` | 16,384 | 경량 최신 모델 |
+| `gpt-5` | 128,000 | 최신 고성능 |
+| `o3-mini` / `o4-mini` | 16,384 | 수학·과학 추론 |
+
+### Anthropic
+
+| 모델 | Max Tokens | 용도 |
+|------|-----------|------|
+| `claude-3-5-sonnet-20241022` | 8,192 | 복잡한 추론, 정확한 분석 |
+| `claude-3-opus-20240229` | 4,096 | 최고 수준의 추론 |
+| `claude-3-haiku-20240307` | 4,096 | 빠른 응답, 간단한 작업 |
+
+### Google Gemini
+
+| 모델 | Max Tokens | 용도 |
+|------|-----------|------|
+| `gemini-1.5-pro` | 8,192 | 복잡한 분석, 멀티모달 |
+| `gemini-1.5-flash` | 8,192 | 빠른 응답, 일반 작업 |
+
+> **자동 선택 우선순위**: Anthropic → OpenAI → Gemini → Ollama (설정된 API 키 기준)
+
+---
+
+## 🌐 API 레퍼런스
+
+서버 실행 후 **[Swagger UI](http://localhost:3002/docs)** 에서 인터랙티브 문서를 확인하세요.
+
+### Chat
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | 서비스 상태 및 사용 가능한 프로바이더 확인 |
+| `POST` | `/api/chat` | 일반 채팅 (단일 응답, 구조화 응답 지원) |
+| `POST` | `/api/chat/stream` | 스트리밍 채팅 (SSE, `text/event-stream`) |
+| `GET` | `/api/models` | 지원 모델 및 프로바이더 목록 |
+| `GET` | `/api/chat/history` | 챗 히스토리 조회 (페이지네이션, 캐싱) |
+| `GET` | `/api/queue/stats` | Redis 메시지 큐 상태 모니터링 |
+
+### Search
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/search/vector` | Pinecone 벡터 유사도 검색 |
+| `GET` | `/api/search/index/stats` | Pinecone 인덱스 통계 |
+
+#### POST `/api/chat` — 요청 예시
+
+```bash
+# 일반 텍스트 응답
+curl -X POST http://localhost:3002/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "삼성전자 주가 전망을 분석해줘",
+    "force_model": "gpt-4o-mini",
+    "userId": "user123"
+  }'
+
+# 구조화된 주식 분석 응답
+curl -X POST http://localhost:3002/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "삼성전자 분석",
+    "response_type": "stock_analysis",
+    "stock_code": "005930",
+    "force_model": "claude-3-5-sonnet-20241022"
+  }'
+```
+
+`response_type` 옵션: `stock_analysis` · `news_summary` · `market_analysis` · `portfolio_recommendation` · `simple`
+
+#### POST `/api/chat/stream` — SSE 스트리밍 예시
+
+```bash
+curl -X POST http://localhost:3002/api/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{"query": "시장 현황 요약"}' \
+  --no-buffer
+# data: {"content": "현재 시장은", "done": false}
+# data: {"content": " 상승세를 보이고 있습니다", "done": false}
+# data: {"content": "", "done": true}
+```
+
+---
+
+## 🚀 배포 가이드
+
+### 개발 환경
+
+```bash
+# 1. 환경 변수 설정
+cp .env.example .env  # API 키 입력
+
+# 2. 가상환경 + 의존성
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+
+# 3. 서버 실행 (포트 3002)
+uvicorn src.main:app --reload --host 0.0.0.0 --port 3002
+```
+
+### 프로덕션 환경
+
+```bash
+# 환경 변수를 직접 주입하거나 .env 사용
+NODE_ENV=production uvicorn src.main:app \
+  --host 0.0.0.0 \
+  --port 3002 \
+  --workers 4 \
+  --log-level warning
+```
+
+### Docker
+
+```bash
+# 이미지 빌드
+docker build -t insightstock-ai-service .
+
+# 컨테이너 실행 (환경 변수 파일 사용)
+docker run -d \
+  --name is-ai \
+  --env-file .env \
+  -p 3002:3002 \
+  insightstock-ai-service
+
+# Docker Compose (Redis 포함)
+docker-compose up -d
+```
+
+> Ollama를 로컬에서 사용할 경우 Docker 컨테이너 내에서 `OLLAMA_HOST=http://host.docker.internal:11434` 로 설정합니다.
+
+---
 
 ## 📄 라이선스
 
